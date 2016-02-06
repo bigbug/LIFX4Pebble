@@ -12,33 +12,7 @@ static Window *s_main_window;
 //static char s_last_text[512];
 static MenuLayer *s_menu_layer;
 static uint8_t lfx_state_power = 20;
-static uint8_t lfx_state_brightness;
-
-/******************************* Dictation API ********************************/
-
-/*static void dictation_session_callback(DictationSession *session, DictationSessionStatus status, 
-                                       char *transcription, void *context) {
-  if(status == DictationSessionStatusSuccess) {
-    // Display the dictated text
-    snprintf(s_last_text, sizeof(s_last_text), "Transcription:\n\n%s", transcription);
-    text_layer_set_text(s_output_layer, s_last_text);
-  } else {
-    // Display the reason for any error
-    static char s_failed_buff[128];
-    snprintf(s_failed_buff, sizeof(s_failed_buff), "Transcription failed.\n\nError ID:\n%d", (int)status);
-    text_layer_set_text(s_output_layer, s_failed_buff);
-  }
-}*/
-
-/*
-static void send(int key, int value) {
-  DictionaryIterator *iter;
-  app_message_outbox_begin(&iter);
-
-  dict_write_int(iter, key, &value, sizeof(int), true);
-
-  app_message_outbox_send();
-}*/
+//static uint8_t lfx_state_brightness;
 
 static void outbox_sent_handler(DictionaryIterator *iter, void *context) {
   // Ready for next command
@@ -78,41 +52,12 @@ static void draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuIndex 
       break;
       menu_cell_basic_draw(ctx, cell_layer, "Toggle", NULL, NULL);
   }
-  /*switch(cell_index->row) {
-    case 0:
-      menu_cell_basic_draw(ctx, cell_layer, "Toggle", NULL, NULL);
-      break;
-    case 1:
-      menu_cell_basic_draw(ctx, cell_layer, "Gedimmt", NULL, NULL);
-      break;
-    case 2:
-      menu_cell_basic_draw(ctx, cell_layer, "Volles Leuchten", NULL, NULL);
-      break;
-    case 3:
-      menu_cell_basic_draw(ctx, cell_layer, "Normal (weiss)", NULL, NULL);
-      break;
-    case 4:
-      menu_cell_basic_draw(ctx, cell_layer, "Blau", NULL, NULL);
-      break;
-    case 5:
-      menu_cell_basic_draw(ctx, cell_layer, "Rot", NULL, NULL);
-      break;
-    case 6:
-      menu_cell_basic_draw(ctx, cell_layer, "Aus", NULL, NULL);
-      break;
-    case 7:
-      menu_cell_basic_draw(ctx, cell_layer, "Aus in 30s", NULL, NULL);
-      break;
-    default:
-      break;
-  }*/
 }
 
 static int16_t get_cell_height_callback(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *context) {
-  return PBL_IF_ROUND_ELSE(
+  return
     menu_layer_is_index_selected(menu_layer, cell_index) ?
-      MENU_CELL_ROUND_FOCUSED_SHORT_CELL_HEIGHT : MENU_CELL_ROUND_UNFOCUSED_TALL_CELL_HEIGHT,
-    CHECKBOX_WINDOW_CELL_HEIGHT);
+      MENU_CELL_ROUND_FOCUSED_SHORT_CELL_HEIGHT : MENU_CELL_ROUND_UNFOCUSED_TALL_CELL_HEIGHT;
 }
 
 static void select_callback(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *context) {

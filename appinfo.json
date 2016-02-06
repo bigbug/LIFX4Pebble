@@ -32,7 +32,6 @@
     "sdkVersion": "3",
     "shortName": "LIFX",
     "targetPlatforms": [
-        "basalt",
         "chalk"
     ],
     "uuid": "0b6afc49-e1c9-4a62-b413-9e872ea33dee",
