@@ -1,0 +1,41 @@
+{
+    "appKeys": {
+        "COLOR": 1,
+        "DIMM": 2,
+        "DURATION_OFF": 3,
+        "LIFX_STATE_BRIGHTNESS": 11,
+        "LIFX_STATE_POWER": 10,
+        "REQUEST_STATE": 20,
+        "TOGGLE": 0
+    },
+    "capabilities": [
+        "configurable"
+    ],
+    "companyName": "Markus Gutbrod",
+    "enableMultiJS": true,
+    "longName": "LIFX",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/lightbulb.png",
+                "name": "IMAGE_LAMP",
+                "targetPlatforms": [
+                    "chalk"
+                ],
+                "type": "bitmap"
+            }
+        ]
+    },
+    "sdkVersion": "3",
+    "shortName": "LIFX",
+    "targetPlatforms": [
+        "basalt",
+        "chalk"
+    ],
+    "uuid": "0b6afc49-e1c9-4a62-b413-9e872ea33dee",
+    "versionLabel": "0.9",
+    "watchapp": {
+        "watchface": false
+    }
+}
