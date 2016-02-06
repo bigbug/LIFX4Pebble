@@ -18,9 +18,11 @@
     "resources": {
         "media": [
             {
-                "file": "images/lightbulb.png",
-                "name": "IMAGE_LAMP",
+                "file": "images/lifx.png",
+                "menuIcon": true,
+                "name": "LIFX",
                 "targetPlatforms": [
+                    "basalt",
                     "chalk"
                 ],
                 "type": "bitmap"
