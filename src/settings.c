@@ -1,25 +1,19 @@
 #include <pebble.h>
+#include "settings.h"
 #include "mainMenu.h"
 #include "comm.h"
-#include "brightness.h"
-#include "turnOffOver.h"
-#include "color.h"
-#include "saturation.h"
-#include "progress_layer_window.h"
-#include "win_edit.h"
 #include "alarm.h"
 #include "wakeup.h"
-#include "settings.h"
 
 static Window *s_main_window;
 static MenuLayer *s_menu_layer;
+static char lightup_text[20];
+static char flash_text[30];
 
-char alarm_text[10];
-
-void main_window_mark_dirty() {
+void settings_window_mark_dirty() {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Main Menu DIRTY!");
   //if(s_menu_layer)
-    layer_mark_dirty((Layer *)s_menu_layer);
+  layer_mark_dirty((Layer *)s_menu_layer);
 }
 
 static void window_unload(Window *window) {
@@ -28,47 +22,27 @@ static void window_unload(Window *window) {
 }
 
 static uint16_t get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *context) {
-  return 8;
+  return 4;
 }
 
 static void draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *context) {
   switch(cell_index->row) {
     case 0:
-      //APP_LOG(APP_LOG_LEVEL_DEBUG, "Current power status: %d", get_lfx_state_power());
-      if(get_lfx_state_power()==20) {
-        menu_cell_basic_draw(ctx, cell_layer, "Getting status ...", NULL, NULL);
-      } else if(get_lfx_state_power()>0) {
-        menu_cell_basic_draw(ctx, cell_layer, "Turn off", NULL, NULL);
-      } else {
-        menu_cell_basic_draw(ctx, cell_layer, "Turn on", NULL, NULL);
-      }
+      snprintf(lightup_text, sizeof(lightup_text), "Light up %d min",alarm_get()->secondsToLightUpBeforeAlarm/60);
+      menu_cell_basic_draw(ctx, cell_layer, lightup_text, "before alarm goes of", NULL);
       break;
     case 1:
-      menu_cell_basic_draw(ctx, cell_layer, "Turn off over ...", "Slowly turn off your bulb(s)", NULL);
+      snprintf(flash_text, sizeof(flash_text), "Snooze to flash: %d",alarm_get()->flashingAfterXSnoozes);
+      menu_cell_basic_draw(ctx, cell_layer, flash_text, "Light starts pulsating", NULL);
       break;
     case 2:
-      menu_cell_basic_draw(ctx, cell_layer, "Brightness", "Change the brightness", NULL);
+      menu_cell_basic_draw(ctx, cell_layer, "Test Alarm", "Immediately fires an alarm", NULL);
       break;
     case 3:
-      menu_cell_basic_draw(ctx, cell_layer, "Color", "Change the color", NULL);
-      break;
-    case 4:
-      menu_cell_basic_draw(ctx, cell_layer, "Saturation", "Change the saturation", NULL);
-      break;
-    case 5:
-      if(alarm_get()->enabled) {
-        menu_cell_basic_draw(ctx, cell_layer, "Alarm", "Not activated", NULL);
-      } else {
-        snprintf(alarm_text, sizeof(alarm_text), "%02d:%02d",alarm_get()->hour,alarm_get()->minute);
-        menu_cell_basic_draw(ctx, cell_layer, "Alarm", alarm_text, NULL);
-      }
-      break;
-    case 6:
-      menu_cell_basic_draw(ctx, cell_layer, "Settings", "and testing options", NULL);
+      menu_cell_basic_draw(ctx, cell_layer, "Test Alarm in 10 s", NULL, NULL);
       break;
     default:
       break;
-      menu_cell_basic_draw(ctx, cell_layer, "Toggle", NULL, NULL);
   }
 }
 
@@ -80,40 +54,31 @@ static int16_t get_cell_height_callback(struct MenuLayer *menu_layer, MenuIndex 
 
 static void select_callback(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *context) {
   time_t future_time = time(NULL) + 10;
+  
   //Alarm *alarm = alarm_get();
   switch(cell_index->row) {
     case 0:
-      if(get_lfx_state_power()==1) {
-        send(TOGGLE, 0);
-      } else if(get_lfx_state_power()==0) {
-        send(TOGGLE, 1);
-      } else {
-        send(TOGGLE, 2);
-      }
+      if(alarm_get()->secondsToLightUpBeforeAlarm==60) {alarm_get()->secondsToLightUpBeforeAlarm=120;}
+      else if(alarm_get()->secondsToLightUpBeforeAlarm==120) {alarm_get()->secondsToLightUpBeforeAlarm=300;}
+      else if(alarm_get()->secondsToLightUpBeforeAlarm==300) {alarm_get()->secondsToLightUpBeforeAlarm=600;}
+      else if(alarm_get()->secondsToLightUpBeforeAlarm==600) {alarm_get()->secondsToLightUpBeforeAlarm=900;}
+      else if(alarm_get()->secondsToLightUpBeforeAlarm==900) {alarm_get()->secondsToLightUpBeforeAlarm=1800;}
+      else {alarm_get()->secondsToLightUpBeforeAlarm=60;}
       break;
     case 1:
-      turnOffOver_layer_window_push();
+      alarm_get()->flashingAfterXSnoozes = (alarm_get()->flashingAfterXSnoozes + 1) % 5;
       break;
     case 2:
-      brightness_layer_window_push();
+      wakeup_launch_window(0);
       break;
     case 3:
-      color_layer_window_push();
-      break;
-    case 4:
-      saturation_layer_window_push();
-      break;
-    case 5:
-      //perform_wakeup_tasks();
-      win_edit_init();
-      win_edit_show(alarm_get());
-      break;
-    case 6:
-      settings_window_init();
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Scheduled wakeup timer");
+      wakeup_schedule(future_time, WAKEUP_REASON_ALARM, true);
       break;
     default:
       break;
   }
+  settings_window_mark_dirty();
 }
 
 static void window_load(Window *window) {
@@ -133,7 +98,7 @@ static void window_load(Window *window) {
   layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
 }
 
-void main_window_init(void) {
+void settings_window_init(void) {
   s_main_window = window_create();
   window_set_window_handlers(s_main_window, (WindowHandlers) {
       .load = window_load,

@@ -3,6 +3,7 @@
 #include "comm.h"
 #include "progress_layer_window.h"
 #include "wakeup.h"
+#include "storage.h"
 
 static bool phoneConnected = false;
 
@@ -75,6 +76,8 @@ bool perform_wakeup_tasks()
 }
 
 static void init(void) {
+  load_persistent_storage_alarms(alarm_get());
+  
   app_message_register_inbox_received(inbox_received_callback);
   app_message_register_inbox_dropped(inbox_dropped_callback);
   
@@ -84,7 +87,7 @@ static void init(void) {
   wakeup_service_subscribe(wakeup_handler);
   
   wakeup_cancel_all();
-  alarm_reset(alarm_get());
+  //alarm_reset(alarm_get());
   alarm_process();
 
   // Open AppMessage
@@ -104,6 +107,7 @@ static void init(void) {
 
 
 static void deinit(void) {
+    write_persistent_storage_alarms(alarm_get());
 }
 
 int main(void) {

@@ -57,12 +57,12 @@ static bool s_select_all;
 #define MENU_SECTION_WEEKDAYS 1
 #define MENU_SECTION_OK 0
 
-static uint16_t menu_num_sections(struct MenuLayer* menu, void* callback_context);
+//static uint16_t menu_num_sections(struct MenuLayer* menu, void* callback_context);
 static uint16_t menu_num_rows(struct MenuLayer* menu, uint16_t section_index, void* callback_context);
 static int16_t menu_cell_height(struct MenuLayer *menu, MenuIndex *cell_index, void *callback_context);
-static int16_t menu_header_height(struct MenuLayer *menu, uint16_t section_index, void *callback_context);
+//static int16_t menu_header_height(struct MenuLayer *menu, uint16_t section_index, void *callback_context);
 static void menu_draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* callback_context);
-static void menu_draw_header(GContext* ctx, const Layer* cell_layer, uint16_t section_index, void* callback_context);
+//static void menu_draw_header(GContext* ctx, const Layer* cell_layer, uint16_t section_index, void* callback_context);
 static void menu_select(struct MenuLayer* menu, MenuIndex* cell_index, void* callback_context);
 
 static Alarm temp_alarm;
