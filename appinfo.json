@@ -3,9 +3,13 @@
         "COLOR": 1,
         "DIMM": 2,
         "DURATION_OFF": 3,
+        "DURATION_OFF_MS": 7,
+        "DURATION_ON": 5,
+        "DURATION_ON_MS": 6,
         "LIFX_STATE_BRIGHTNESS": 11,
         "LIFX_STATE_POWER": 10,
         "REQUEST_STATE": 20,
+        "SATURATION": 4,
         "TOGGLE": 0
     },
     "capabilities": [
@@ -18,11 +22,40 @@
     "resources": {
         "media": [
             {
+                "file": "data/clock_sequence.pdc",
+                "name": "CLOCK_SEQUENCE",
+                "targetPlatforms": null,
+                "type": "raw"
+            },
+            {
+                "file": "images/action_icon_cross_inv.png",
+                "name": "IMAGE_ACTION_ICON_CROSS_INV",
+                "targetPlatforms": null,
+                "type": "bitmap"
+            },
+            {
+                "file": "images/action_icon_zz_inv.png",
+                "name": "IMAGE_ACTION_ICON_ZZ_INV",
+                "targetPlatforms": null,
+                "type": "bitmap"
+            },
+            {
+                "file": "images/action_icon_check.png",
+                "name": "IMAGE_ACTION_ICON_CHECK",
+                "targetPlatforms": null,
+                "type": "bitmap"
+            },
+            {
+                "file": "images/action_icon_check_inv.png",
+                "name": "IMAGE_ACTION_ICON_CHECK_INV",
+                "targetPlatforms": null,
+                "type": "bitmap"
+            },
+            {
                 "file": "images/lifx.png",
                 "menuIcon": true,
                 "name": "LIFX",
                 "targetPlatforms": [
-                    "basalt",
                     "chalk"
                 ],
                 "type": "bitmap"
@@ -35,7 +68,7 @@
         "chalk"
     ],
     "uuid": "0b6afc49-e1c9-4a62-b413-9e872ea33dee",
-    "versionLabel": "0.9",
+    "versionLabel": "0.92",
     "watchapp": {
         "watchface": false
     }

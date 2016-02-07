@@ -4,7 +4,7 @@ function lifx_getState() {
   xhr.setRequestHeader( 'Authorization', 'Bearer ' + localStorage.getItem(0) );
   //xhr.withCredentials = true;
   xhr.onreadystatechange = function() {
-      if (xhr.readyState == 4 && xhr.status == 200) {
+      if (xhr.readyState == 4 || xhr.status == 200) {
         var myArr = JSON.parse(xhr.responseText);
         var myState = (myArr[0].power=="on") ? 1 : 0;
         console.log("returned lifx-state: "+myState+" raw: "+myArr[0].power);
@@ -18,6 +18,8 @@ function lifx_getState() {
         }, function(e) {
           console.log('Send failed!');
         });
+      } else {
+        Pebble.showSimpleNotificationOnPebble("Status "+xhr.status, xhr.statusText);
       }
   };
   xhr.send();
@@ -34,7 +36,7 @@ function lifx_toggle() {
   xhr.send();
 }
 
-function lifx_state(powerState, color, brightness, duration) {
+function lifx_state(powerState, color, brightness, duration, saturation) {
   
   if(powerState === null)
     powerState = "off";
@@ -54,6 +56,16 @@ function lifx_state(powerState, color, brightness, duration) {
     a.color = color;
   }
   
+  if(saturation !== null && saturation !== undefined) {
+    if(a.color === null || a.color === undefined) {
+      a.color = "saturation:"+saturation;
+    } else {
+      a.color = a.color + " saturation:"+saturation;
+    }
+  }
+  
+  console.log("LIFX raw options: "+JSON.stringify(a));
+  
   var xhr = new XMLHttpRequest();
   xhr.open( 'PUT', 'https://api.lifx.com/v1/lights/all/state', true);
   xhr.setRequestHeader( 'Authorization', 'Bearer ' + localStorage.getItem(0) );
@@ -71,6 +83,8 @@ function lifx_state(powerState, color, brightness, duration) {
         }, function(e) {
           console.log('Send failed!');
         });
+      } else {
+        Pebble.showSimpleNotificationOnPebble("Status "+xhr.status, xhr.statusText);
       }
   };
   xhr.send(JSON.stringify(a));
@@ -97,6 +111,8 @@ Pebble.addEventListener('appmessage', function (e) {
     lifx_toggle();
   } else if (e.payload.DIMM>=0) {
     lifx_state("on", null, e.payload.DIMM/100, null);
+  } else if (e.payload.SATURATION>=0) {
+    lifx_state("on", null, null, null, e.payload.SATURATION/100);
   } else if(e.payload.COLOR===0) {
     lifx_state("on", "white");
   } else if(e.payload.COLOR==1) {
@@ -109,8 +125,14 @@ Pebble.addEventListener('appmessage', function (e) {
     lifx_state("on", "green");
   } else if(e.payload.COLOR==5) {
     lifx_state("on", "blue");
-  } else if(e.payload.DURATION_OFF>0) {
+  } else if(e.payload.DURATION_OFF>=0) {
     lifx_state("off", null, null, e.payload.DURATION_OFF);
+  } else if(e.payload.DURATION_ON>=0) {
+    lifx_state("on", null, null, e.payload.DURATION_ON);
+  } else if(e.payload.DURATION_OFF_MS>=0) {
+    lifx_state("off", null, null, e.payload.DURATION_OFF/1000);
+  } else if(e.payload.DURATION_ON_MS>=0) {
+    lifx_state("on", null, null, e.payload.DURATION_ON/1000);
   }
 });
 

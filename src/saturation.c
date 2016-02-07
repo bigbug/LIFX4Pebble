@@ -1,33 +1,27 @@
 #include <pebble.h>
-#include "brightness.h"
+#include "saturation.h"
 #include "comm.h"
 
 static Window *s_window_brightness;
 static MenuLayer *s_menu_layer;
 
 static uint16_t get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *context) {
-  return 6;
+  return 4;
 }
 
 static void draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *context) {
   switch(cell_index->row) {
     case 0:
-      menu_cell_basic_draw(ctx, cell_layer, "White", NULL, NULL);
+      menu_cell_basic_draw(ctx, cell_layer, "100 %", NULL, NULL);
       break;
     case 1:
-      menu_cell_basic_draw(ctx, cell_layer, "Red", NULL, NULL);
+      menu_cell_basic_draw(ctx, cell_layer, "70%", NULL, NULL);
       break;
     case 2:
-      menu_cell_basic_draw(ctx, cell_layer, "Orange", NULL, NULL);
+      menu_cell_basic_draw(ctx, cell_layer, "50%", NULL, NULL);
       break;
     case 3:
-      menu_cell_basic_draw(ctx, cell_layer, "Yellow", NULL, NULL);
-      break;
-    case 4:
-      menu_cell_basic_draw(ctx, cell_layer, "Gren", NULL, NULL);
-      break;
-    case 5:
-      menu_cell_basic_draw(ctx, cell_layer, "Blue", NULL, NULL);
+      menu_cell_basic_draw(ctx, cell_layer, "20%", NULL, NULL);
       break;
     default:
       break;
@@ -41,8 +35,26 @@ static int16_t get_cell_height_callback(struct MenuLayer *menu_layer, MenuIndex 
 }
 
 static void select_callback(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *context) {
-  send(COLOR, cell_index->row);
+  switch(cell_index->row) {
+    case 0:
+      send(SATURATION, 100);
+      break;
+    case 1:
+      send(SATURATION, 70);
+      break;
+    case 2:
+      send(SATURATION, 50);
+      break;
+    case 3:
+      send(SATURATION, 20);
+      break;
+    default:
+      break;
+  }
 }
+
+
+
 
 static void window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
@@ -67,7 +79,7 @@ static void window_unload(Window *window) {
   s_window_brightness = NULL;
 }
 
-void color_layer_window_push() {
+void saturation_layer_window_push() {
   if(!s_window_brightness) {
     s_window_brightness = window_create();
     window_set_background_color(s_window_brightness, PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite));
@@ -78,3 +90,5 @@ void color_layer_window_push() {
   }
   window_stack_push(s_window_brightness, true);
 }
+
+
