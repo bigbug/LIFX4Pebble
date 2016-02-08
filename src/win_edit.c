@@ -11,6 +11,7 @@
 
 #include "win_edit.h"
 #include "localize.h"
+#include "mainMenu.h"
 
 static void time_window_load(Window* window);
 static void time_window_unload(Window* window);
@@ -445,11 +446,18 @@ static void menu_draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cel
 }
 
 static void menu_select(struct MenuLayer* menu, MenuIndex* cell_index, void* callback_context) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu select"); 
   switch (cell_index->section) {
     case MENU_SECTION_OK:
         temp_alarm.enabled = cell_index->row==0;
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Exiting alarm window");
+        if(temp_alarm.enabled) {
+          APP_LOG(APP_LOG_LEVEL_DEBUG, "alarm ENABLED");
+        } else {
+          APP_LOG(APP_LOG_LEVEL_DEBUG, "alarm DISABLED");
+        }
         // update timer, destroy windows
-        temp_alarm.enabled=true;
+        //temp_alarm.enabled=true;
         if(!clock_is_24h_style()) {
           // convert hours and am/pm back
           APP_LOG(APP_LOG_LEVEL_DEBUG,"Hour before conversion is %d",temp_alarm.hour);
@@ -467,6 +475,7 @@ static void menu_select(struct MenuLayer* menu, MenuIndex* cell_index, void* cal
         window_stack_pop(true);
         window_stack_pop(false);
         alarm_process();
+        main_window_mark_dirty();
       break;
       
     default:

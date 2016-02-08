@@ -24,7 +24,7 @@ static void draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuIndex 
       menu_cell_basic_draw(ctx, cell_layer, "Yellow", NULL, NULL);
       break;
     case 4:
-      menu_cell_basic_draw(ctx, cell_layer, "Gren", NULL, NULL);
+      menu_cell_basic_draw(ctx, cell_layer, "Green", NULL, NULL);
       break;
     case 5:
       menu_cell_basic_draw(ctx, cell_layer, "Blue", NULL, NULL);

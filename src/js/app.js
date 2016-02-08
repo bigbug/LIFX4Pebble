@@ -1,4 +1,22 @@
+function lifx_isAuthorized() {
+  var token = localStorage.getItem(0);
+  if(token===null || token===undefined || token.length<10) {
+    Pebble.showSimpleNotificationOnPebble("Not authorized", "Go to the settings screen on your phone to provide your personal LIFX token.");
+    return false;
+  }
+  return true;
+}
+
+function xhr_errorHandling(xhr) {
+  if(xhr.status===null) {
+    Pebble.showSimpleNotificationOnPebble("Undefined error", "HTTP request didn't return any status.");
+  } else {
+    Pebble.showSimpleNotificationOnPebble("Status "+xhr.status, xhr.statusText);
+  }
+}
+
 function lifx_getState() {
+  if(!lifx_isAuthorized()) return;
   var xhr = new XMLHttpRequest();
   xhr.open( 'GET', 'https://api.lifx.com/v1/lights/all', true);
   xhr.setRequestHeader( 'Authorization', 'Bearer ' + localStorage.getItem(0) );
@@ -19,24 +37,30 @@ function lifx_getState() {
           console.log('Send failed!');
         });
       } else {
-        Pebble.showSimpleNotificationOnPebble("Status "+xhr.status, xhr.statusText);
+        xhr_errorHandling(xhr);
       }
   };
   xhr.send();
 }
 
 function lifx_toggle() {
+  if(!lifx_isAuthorized()) return;
   var xhr = new XMLHttpRequest();
   xhr.open( 'POST', 'https://api.lifx.com/v1/lights/all/toggle', true);
   xhr.setRequestHeader( 'Authorization', 'Bearer ' + localStorage.getItem(0) );
   xhr.onreadystatechange = function() {
-      console.log( "state status", xhr.status, xhr.statusText);
-      //lifx_getState();
+    if(xhr.status == 200 || xhr.status==207) {
+        console.log( "toggled status", xhr.status, xhr.statusText);
+      } else {
+        xhr_errorHandling(xhr);
+      }
+      lifx_getState();
   };
   xhr.send();
 }
 
 function lifx_state(powerState, color, brightness, duration, saturation) {
+  if(!lifx_isAuthorized()) return;
   
   if(powerState === null)
     powerState = "off";
@@ -84,7 +108,7 @@ function lifx_state(powerState, color, brightness, duration, saturation) {
           console.log('Send failed!');
         });
       } else {
-        Pebble.showSimpleNotificationOnPebble("Status "+xhr.status, xhr.statusText);
+        xhr_errorHandling(xhr);
       }
   };
   xhr.send(JSON.stringify(a));

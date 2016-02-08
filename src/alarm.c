@@ -1,5 +1,6 @@
 #include <pebble.h>
 #include "alarm.h"
+#include "comm.h"
 
 /*time_t time_get_tomorrow(int hour, int minute) {
   //time_t timestamp = time(NULL);
@@ -44,9 +45,14 @@ void alarm_process() {
     time_t wakeup_time = alarm_get_time_of_wakeup(&myAlarm);
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Wakeup scheduled for: %lu", (unsigned long)wakeup_time);
     if(myAlarm.secondsToLightUpBeforeAlarm > 0) {
+      long timediff = wakeup_time - time(NULL) - myAlarm.secondsToLightUpBeforeAlarm;
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Light up scheduled %d seconds before.", myAlarm.secondsToLightUpBeforeAlarm);
-      wakeup_schedule(wakeup_time - myAlarm.secondsToLightUpBeforeAlarm, WAKEUP_REASON_LIGHT_UP, true);
-;    }
+      if(timediff<0 || timediff<=60) {
+        send(DURATION_ON, -timediff);
+      } else {
+        wakeup_schedule(timediff, WAKEUP_REASON_LIGHT_UP, true);
+      }
+    }
     myAlarm.alarm_id = wakeup_schedule(wakeup_time, WAKEUP_REASON_ALARM, true);
   }
 }

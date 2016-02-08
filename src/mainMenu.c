@@ -57,10 +57,10 @@ static void draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuIndex 
       break;
     case 5:
       if(alarm_get()->enabled) {
-        menu_cell_basic_draw(ctx, cell_layer, "Alarm", "Not activated", NULL);
-      } else {
         snprintf(alarm_text, sizeof(alarm_text), "%02d:%02d",alarm_get()->hour,alarm_get()->minute);
         menu_cell_basic_draw(ctx, cell_layer, "Alarm", alarm_text, NULL);
+      } else {
+        menu_cell_basic_draw(ctx, cell_layer, "Alarm", "Not activated", NULL);
       }
       break;
     case 6:
