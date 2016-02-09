@@ -12,6 +12,7 @@
 #include "win_edit.h"
 #include "localize.h"
 #include "mainMenu.h"
+#include "alarm.h"
 
 static void time_window_load(Window* window);
 static void time_window_unload(Window* window);
@@ -20,6 +21,8 @@ static void click_config_provider(void *context);
 static Window *s_time_window;
 static Layer *s_canvas_layer;
 static TextLayer *s_input_layers[3];
+static StatusBarLayer *s_time_status_layer;
+static StatusBarLayer *s_status_layer;
 
 static char s_value_buffers[3][3];
 static int s_selection;
@@ -27,6 +30,9 @@ static char s_digits[3];
 static char s_max[3];
 static char s_min[3];
 static bool s_withampm;
+
+static char s_time_text[10];
+
 #ifdef PBL_RECT
 #define OFFSET_LEFT 0
 #define OFFSET_TOP 0
@@ -54,6 +60,9 @@ static GBitmap *check_icon,*check_icon_inv;
 static bool s_is_am;
 static bool s_select_all;
 
+static char s_countdown_text[30];
+static TextLayer *s_layer_countdown;
+
 // Menu stuff
 #define MENU_SECTION_WEEKDAYS 1
 #define MENU_SECTION_OK 0
@@ -68,6 +77,42 @@ static void menu_select(struct MenuLayer* menu, MenuIndex* cell_index, void* cal
 
 static Alarm temp_alarm;
 static Alarm *current_alarm;
+
+void save_alarm(bool addToRing)
+{
+  AlarmTime tempAlarmTime;
+  //temp_alarm.enabled = cell_index->row==0;
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Exiting alarm window");
+  if(temp_alarm.enabled) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "alarm ENABLED");
+  } else {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "alarm DISABLED");
+  }
+  // update timer, destroy windows
+  //temp_alarm.enabled=true;
+  if(!clock_is_24h_style()) {
+    // convert hours and am/pm back
+    APP_LOG(APP_LOG_LEVEL_DEBUG,"Hour before conversion is %d",temp_alarm.hour);
+    if(s_is_am) {
+      int hour = temp_alarm.hour;
+      hour -= 12;
+      if(hour<0) hour+=12;
+      APP_LOG(APP_LOG_LEVEL_DEBUG,"Hour after conversion is %d",hour);
+      temp_alarm.hour = hour;
+    } else {
+      temp_alarm.hour = ((temp_alarm.hour+12)%12) + 12;
+    }          
+  }
+
+  tempAlarmTime.hour = temp_alarm.hour;
+  tempAlarmTime.minute = temp_alarm.minute;
+
+  if(addToRing)
+    alarm_ring_add(&tempAlarmTime);
+  
+  memcpy(current_alarm,&temp_alarm,sizeof(Alarm));
+  alarm_process();
+}
 
 void win_edit_init(void)
 {
@@ -124,7 +169,9 @@ void win_edit_show(Alarm *alarm){
     s_digits[0] = temp_alarm.hour;
     s_digits[1] = temp_alarm.minute;
   }
-  window_stack_push(s_time_window,true);
+  // Go to recent alarms menu
+  window_stack_push(s_window, true);
+  //window_stack_push(s_time_window,true);
 }
 
 // Time input window stuff
@@ -155,6 +202,14 @@ static void update_ui(Layer *layer, GContext *ctx) {
       snprintf(s_value_buffers[i], sizeof("AM"), s_digits[i]?"AM":"PM");
     text_layer_set_text(s_input_layers[i], s_value_buffers[i]);
   }
+  
+  time_t tempTime = alarm_get_time_of_wakeup(&temp_alarm) - time(NULL);
+  int cMin = (int)((int)tempTime / 60);
+  int cHour = (int)((int)cMin / 60);
+  cMin = cMin % 60;
+  snprintf(s_countdown_text, sizeof(s_countdown_text), "%02d h %02d min til alarm starts", cHour, cMin);
+  text_layer_set_text(s_layer_countdown, s_countdown_text);
+  
   layer_set_hidden(text_layer_get_layer(s_input_layers[2]),!s_withampm);
   // draw the :
 
@@ -181,11 +236,19 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
   s_selection++;
   
   if(s_selection == (s_withampm? 3:2)) {
-    temp_alarm.hour = s_digits[0];
-    temp_alarm.minute = s_digits[1];
+    temp_alarm.enabled = true;
     s_is_am = s_digits[2];
-    window_stack_push(s_window,true);
+    //window_stack_push(s_window,true);
+    //window_stack_push(s_time_window, true);
     s_selection--;
+    
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "about to leave menu");
+    
+    //save_alarm(false);
+    save_alarm(true);
+    // Return to main menu
+    window_stack_pop(true);
+    window_stack_pop(false);
   }
   else
     layer_mark_dirty(s_canvas_layer);
@@ -210,6 +273,9 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
 
   if(s_selection == 0 && s_withampm && s_digits[0] == 0)
     s_digits[0] = 1;
+  
+  temp_alarm.hour = s_digits[0];
+  temp_alarm.minute = s_digits[1];
 	
   layer_mark_dirty(s_canvas_layer);
 }
@@ -222,6 +288,9 @@ static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
 	
   if(s_selection == 0 && s_withampm && s_digits[0] == 0)
     s_digits[0] = s_max[0];
+  
+  temp_alarm.hour = s_digits[0];
+  temp_alarm.minute = s_digits[1];
   
   layer_mark_dirty(s_canvas_layer);
 }
@@ -257,6 +326,19 @@ static void time_window_load(Window *window) {
     layer_add_child(window_layer, text_layer_get_layer(s_input_layers[i]));
   }
   window_set_click_config_provider(window, click_config_provider);
+  
+  s_layer_countdown = text_layer_create(GRect(30, 60 + OFFSET_TOP+ 40 +25, 120, 40));
+  text_layer_set_text_color(s_layer_countdown, GColorDarkGray);
+  text_layer_set_background_color(s_layer_countdown, GColorWhite);
+  text_layer_set_text(s_layer_countdown, "00");
+  //text_layer_set_font(s_layer_countdown, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
+  text_layer_set_text_alignment(s_layer_countdown, GTextAlignmentCenter);
+  layer_add_child(window_layer, text_layer_get_layer(s_layer_countdown));
+  
+  s_time_status_layer = status_bar_layer_create();
+  status_bar_layer_set_colors(s_time_status_layer, GColorWhite, GColorBlack);
+  layer_add_child(window_layer, status_bar_layer_get_layer(s_time_status_layer));
+  
   layer_mark_dirty(s_canvas_layer);
 }
 
@@ -268,48 +350,18 @@ static void time_window_unload(Window *window) {
   //window_destroy(window);
 }
 
-
-// Alarm options window stuff
-void window_load(Window* window)
-{
-  Layer *window_layer = window_get_root_layer(s_window);
-  GRect bounds = layer_get_frame(window_layer);
-
-  // Create the menu layer
-  s_menu = menu_layer_create(bounds);
-  menu_layer_set_callbacks(s_menu, NULL, (MenuLayerCallbacks) {
-    //.get_num_sections = menu_num_sections,
-    .get_num_rows = menu_num_rows,
-    .get_cell_height = menu_cell_height,
-    //.get_header_height = menu_header_height,
-    //.draw_header = menu_draw_header,
-    .draw_row = menu_draw_row,
-    .select_click = menu_select,
-  });
-  
-  // Bind the menu layer's click config provider to the window for interactivity
-  menu_layer_set_click_config_onto_window(s_menu, s_window);
-  
-#ifdef PBL_COLOR
-  menu_layer_set_highlight_colors(s_menu,GColorCyan,GColorWhite);
-  menu_layer_pad_bottom_enable(s_menu,false);
-#endif
-  // Add it to the window for display
-  layer_add_child(window_layer, menu_layer_get_layer(s_menu));
+static uint16_t menu_num_sections(struct MenuLayer* menu, void* callback_context) {
+  if(alarm_ring_length()>0)
+    return 2;
+  return 1;
 }
-
-void window_unload(Window* window)
-{
-  menu_layer_destroy(s_menu);
-  //gbitmap_destroy(check_icon);
-}
-
-/*static uint16_t menu_num_sections(struct MenuLayer* menu, void* callback_context) {
-  return 2;
-}*/
 
 static uint16_t menu_num_rows(struct MenuLayer* menu, uint16_t section_index, void* callback_context) {
-  return 2;
+  if(section_index==0) {
+    return 2;
+  } else {
+    return alarm_ring_length();
+  }
   /*switch (section_index) {
     case MENU_SECTION_WEEKDAYS:
       return 8;
@@ -326,15 +378,21 @@ static int16_t menu_cell_height(struct MenuLayer *menu, MenuIndex *cell_index, v
   return ITEM_HEIGHT;
 }
 
-/*static int16_t menu_header_height(struct MenuLayer *menu, uint16_t section_index, void *callback_context) {
-#ifdef PBL_RECT
+static int16_t menu_header_height(struct MenuLayer *menu, uint16_t section_index, void *callback_context) {
+/*#ifdef PBL_RECT
   return 16;
 #else
   if(section_index == MENU_SECTION_WEEKDAYS)
   return 16;
   else return 0;
-#endif
-}*/
+#endif*/
+  if(section_index == 0) {
+    return 0;
+  }
+  return 16;
+}
+
+
 
 /*static void menu_draw_header(GContext* ctx, const Layer* cell_layer, uint16_t section_index, void* callback_context) {
   graphics_context_set_text_color(ctx, GColorWhite);
@@ -360,6 +418,26 @@ static int16_t menu_cell_height(struct MenuLayer *menu, MenuIndex *cell_index, v
 #endif
 }*/
 
+static void menu_draw_header(GContext* ctx, const Layer* cell_layer, uint16_t section_index, void* callback_context) {
+  graphics_context_set_text_color(ctx, GColorWhite);
+  graphics_context_set_fill_color(ctx, GColorBlue);
+  GRect layer_size = layer_get_bounds(cell_layer);
+  graphics_fill_rect(ctx,GRect(0,1,layer_size.size.w,14),0,GCornerNone);
+  
+#ifdef PBL_RECT
+  graphics_draw_text(ctx, section_index==MENU_SECTION_OK?_("Update Alarm"):_("Weekdays"),
+                     fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
+                     GRect(3, -2, layer_size.size.w - 3, 14), GTextOverflowModeWordWrap,
+                     GTextAlignmentLeft, NULL);
+#else
+  if (section_index!=0)
+  graphics_draw_text(ctx, _("Recent alarm times"),
+                     fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
+                     GRect(3, -2, layer_size.size.w - 3, 14), GTextOverflowModeWordWrap,
+                     GTextAlignmentCenter, NULL);
+#endif
+}
+
 static void menu_draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cell_index, void* callback_context) {
 
 /*  graphics_context_set_text_color(ctx, GColorBlack);*/
@@ -373,58 +451,20 @@ static void menu_draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cel
   {
     if(cell_index->row==0) // OK
     {
-      text = _("Aktivieren"),
+      text = _("Set & Activate"),
       font = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
     }
     if(cell_index->row==1) // set text
     {
-      text = _("Deaktivieren");
+      text = _("Deactivate");
       font = fonts_get_system_font(FONT_KEY_GOTHIC_24);
     }
+  } else {
+    AlarmTime *alarm;
+    alarm = alarm_ring_getTime(cell_index->row);
+    snprintf(s_time_text, sizeof(s_time_text), "%02d:%02d",alarm->hour,alarm->minute);
+    menu_cell_basic_draw(ctx, cell_layer, s_time_text, NULL, NULL);
   }
-  /*else
-  {
-    if(cell_index->row==0) // select all-none
-    {
-      text = _("Select All/None");
-      font = fonts_get_system_font(FONT_KEY_GOTHIC_24);
-      // draw checkmark if enabled
-      draw_checkmark = s_select_all;
-    }
-    else
-    {
-      switch (cell_index->row) {
-        case 1:
-          text = _("Sunday");
-          break;
-        case 2:
-          text = _("Monday");
-          break;
-        case 3:
-          text = _("Tuesday");
-          break;
-        case 4:
-          text = _("Wednesday");
-          break;
-        case 5:
-          text = _("Thursday");
-          break;
-        case 6:
-          text = _("Friday");
-          break;
-        case 7:
-          text = _("Saturday");
-          break;
-          
-        default:
-          break;
-      }
-      //text = weekday_names[cell_index->row-1];
-      font = fonts_get_system_font(FONT_KEY_GOTHIC_24);
-      // draw checkmark if enabled
-      //draw_checkmark = temp_alarm.weekdays_active[cell_index->row-1];
-    }
-  }*/
 #ifdef PBL_RECT
   graphics_draw_text(ctx, text,
                      font,
@@ -436,48 +476,71 @@ static void menu_draw_row(GContext* ctx, const Layer* cell_layer, MenuIndex* cel
                      GRect(3, -3 + OFFSET_ITEM_TOP, layer_size.size.w - 3, 28), GTextOverflowModeWordWrap,
                      GTextAlignmentCenter, NULL);
 #endif
-  /*if(draw_checkmark)
-  {
-  if(menu_cell_layer_is_highlighted(cell_layer))
-    graphics_draw_bitmap_in_rect(ctx, check_icon, GRect(layer_size.size.w - 3 - 16 - OFFSET_LEFT, 6+ OFFSET_ITEM_TOP, 16, 16));
-  else
-    graphics_draw_bitmap_in_rect(ctx, check_icon_inv, GRect(layer_size.size.w - 3 - 16 - OFFSET_LEFT, 6+ OFFSET_ITEM_TOP, 16, 16));
-  }*/
+}
+
+// Alarm options window stuff
+void window_load(Window* window)
+{
+  Layer *window_layer = window_get_root_layer(s_window);
+  GRect bounds = layer_get_frame(window_layer);
+
+  // Create the menu layer
+  s_menu = menu_layer_create(bounds);
+  menu_layer_set_callbacks(s_menu, NULL, (MenuLayerCallbacks) {
+    .get_num_sections = menu_num_sections,
+    .get_num_rows = menu_num_rows,
+    .get_cell_height = menu_cell_height,
+    .get_header_height = menu_header_height,
+    .draw_header = menu_draw_header,
+    .draw_row = menu_draw_row,
+    .select_click = menu_select,
+  });
+  
+  // Bind the menu layer's click config provider to the window for interactivity
+  menu_layer_set_click_config_onto_window(s_menu, s_window);
+  
+#ifdef PBL_COLOR
+  menu_layer_set_highlight_colors(s_menu,GColorCyan,GColorBlack);
+  menu_layer_pad_bottom_enable(s_menu,false);
+#endif
+  // Add it to the window for display
+  layer_add_child(window_layer, menu_layer_get_layer(s_menu));
+  
+  s_status_layer = status_bar_layer_create();
+  status_bar_layer_set_colors(s_status_layer, GColorWhite, GColorBlack);
+  layer_add_child(window_layer, status_bar_layer_get_layer(s_status_layer));
+}
+
+void window_unload(Window* window)
+{
+  menu_layer_destroy(s_menu);
+  //gbitmap_destroy(check_icon);
 }
 
 static void menu_select(struct MenuLayer* menu, MenuIndex* cell_index, void* callback_context) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Menu select"); 
   switch (cell_index->section) {
     case MENU_SECTION_OK:
-        temp_alarm.enabled = cell_index->row==0;
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Exiting alarm window");
-        if(temp_alarm.enabled) {
-          APP_LOG(APP_LOG_LEVEL_DEBUG, "alarm ENABLED");
-        } else {
-          APP_LOG(APP_LOG_LEVEL_DEBUG, "alarm DISABLED");
-        }
-        // update timer, destroy windows
-        //temp_alarm.enabled=true;
-        if(!clock_is_24h_style()) {
-          // convert hours and am/pm back
-          APP_LOG(APP_LOG_LEVEL_DEBUG,"Hour before conversion is %d",temp_alarm.hour);
-          if(s_is_am) {
-            int hour = temp_alarm.hour;
-            hour -= 12;
-            if(hour<0) hour+=12;
-            APP_LOG(APP_LOG_LEVEL_DEBUG,"Hour after conversion is %d",hour);
-            temp_alarm.hour = hour;
-          } else {
-            temp_alarm.hour = ((temp_alarm.hour+12)%12) + 12;
-          }          
-        }
-        memcpy(current_alarm,&temp_alarm,sizeof(Alarm));
-        window_stack_pop(true);
+        /*window_stack_pop(true);
         window_stack_pop(false);
         alarm_process();
-        main_window_mark_dirty();
+        main_window_mark_dirty();*/
+        if(cell_index->row==0) {
+          APP_LOG(APP_LOG_LEVEL_DEBUG, "Push time setting window");
+          window_stack_push(s_time_window, true);
+        } else {
+          temp_alarm.enabled = false;
+          save_alarm(false);
+          window_stack_pop(true);
+        }
       break;
-      
+      case 1:
+        temp_alarm.enabled = true;
+        temp_alarm.hour = alarm_ring_getTime(cell_index->row)->hour;
+        temp_alarm.minute = alarm_ring_getTime(cell_index->row)->minute;
+        save_alarm(false);
+        window_stack_pop(true);
+      break;
     default:
       break;
   }

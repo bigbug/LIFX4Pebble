@@ -77,6 +77,7 @@ bool perform_wakeup_tasks()
 
 static void init(void) {
   load_persistent_storage_alarms(alarm_get());
+  load_persistent_storage_alarmring(alarm_ring_get());
   
   app_message_register_inbox_received(inbox_received_callback);
   app_message_register_inbox_dropped(inbox_dropped_callback);
@@ -107,7 +108,8 @@ static void init(void) {
 
 
 static void deinit(void) {
-    write_persistent_storage_alarms(alarm_get());
+  write_persistent_storage_alarms(alarm_get());
+  write_persistent_storage_alarmring(alarm_ring_get());
 }
 
 int main(void) {

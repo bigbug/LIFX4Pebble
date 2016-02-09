@@ -9,6 +9,7 @@ static Window *s_main_window;
 static MenuLayer *s_menu_layer;
 static char lightup_text[20];
 static char flash_text[30];
+static StatusBarLayer *s_status_layer;
 
 void settings_window_mark_dirty() {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Main Menu DIRTY!");
@@ -96,6 +97,10 @@ static void window_load(Window *window) {
       .select_click = select_callback,
   });
   layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
+  
+  s_status_layer = status_bar_layer_create();
+  status_bar_layer_set_colors(s_status_layer, GColorWhite, GColorBlack);
+  layer_add_child(window_layer, status_bar_layer_get_layer(s_status_layer));
 }
 
 void settings_window_init(void) {

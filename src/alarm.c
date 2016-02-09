@@ -2,37 +2,46 @@
 #include "alarm.h"
 #include "comm.h"
 
-/*time_t time_get_tomorrow(int hour, int minute) {
-  //time_t timestamp = time(NULL);
-  time_t timestamp = time_start_of_today();
-  time_t wishdate = hour*60 + minute;
-  
-  if(timestamp<wishdate) {
-    return clock_to_timestamp(TODAY, hour, minute);
-  } else {
-    //if()
-  }
-}
-
-void alarm_set_wakeuptime() {
-  //Check the event is not already scheduled
-  if (!wakeup_query(s_wakeup_id, NULL)) {
-    // Current time + 30 seconds
-    time_t future_time = time(NULL) + 30;
-  
-
-    // Schedule wakeup event and keep the WakeupId
-    s_wakeup_id = wakeup_schedule(future_time, WAKEUP_REASON, true);
-    persist_write_int(PERSIST_KEY_WAKEUP_ID, s_wakeup_id);
-
-    // Prepare for waking up later
-    text_layer_set_text(s_output_layer, "This app will now wake up in 30 seconds.\n\nClose me!");
-  }
-}*/
 Alarm myAlarm;
+AlarmTimeRing myRing;
 
 Alarm* alarm_get() {
   return &myAlarm;
+}
+
+void alarm_ring_reset() {
+  myRing.currentIndex = 0;
+  myRing.length = 0;
+}
+
+AlarmTimeRing* alarm_ring_get() {
+  return &myRing;
+}
+
+AlarmTime* alarm_ring_getTime(char index) {
+  int ind = myRing.currentIndex - 1 - index;
+  if(ind<0) {
+    ind += ALARM_TIME_LENGTH;
+  }
+  return &(myRing.times[ind]);
+}
+
+void alarm_ring_add(AlarmTime *time) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Adding alarm with hour: %d and minute: %d", time->hour, time->minute);
+  APP_LOG(APP_LOG_LEVEL_WARNING, "Ring current index: %d", myRing.currentIndex);
+  myRing.times[myRing.currentIndex].hour   = time->hour;
+  myRing.times[myRing.currentIndex].minute = time->minute;
+  
+  myRing.currentIndex = (myRing.currentIndex + 1) % (ALARM_TIME_LENGTH+1);
+  myRing.length = myRing.length+1;
+  if(myRing.length > ALARM_TIME_LENGTH)
+    myRing.length = ALARM_TIME_LENGTH;
+  
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Ring stats. currentIndex: %d , current length: %d", myRing.currentIndex, myRing.length);
+}
+
+char alarm_ring_length() {
+  return myRing.length;
 }
 
 void alarm_process() {
@@ -81,8 +90,12 @@ time_t alarm_get_time_of_wakeup(Alarm *alarm)
   // Check if we may schedule the alarm today
   int current_weekday = t->tm_wday;
   temp_timestamp = clock_to_timestamp_precise((current_weekday+1)%7,alarm->hour,alarm->minute);
-  if(temp_timestamp>(now + (60*60*24*7))) // more than one week away? This is today!
-    temp_timestamp-=(60*60*24*7);
+  /*if(temp_timestamp>(now + (60*60*24*7))) // more than one week away? This is today!
+    temp_timestamp-=(60*60*24*7);*/
+  // subtract til its less than a day away
+  while(temp_timestamp-now>60*60*24)
+    temp_timestamp -= 60*60*24;
+  
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Diff to now: %d",(int)(temp_timestamp-now));
   return temp_timestamp;
 }

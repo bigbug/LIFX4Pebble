@@ -4,6 +4,7 @@
 
 static Window *s_window_brightness;
 static MenuLayer *s_menu_layer;
+static StatusBarLayer *s_status_layer;
 
 static uint16_t get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *context) {
   return 4;
@@ -70,6 +71,10 @@ static void window_load(Window *window) {
       .select_click = select_callback,
   });
   layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
+  
+  s_status_layer = status_bar_layer_create();
+  status_bar_layer_set_colors(s_status_layer, GColorWhite, GColorBlack);
+  layer_add_child(window_layer, status_bar_layer_get_layer(s_status_layer));
 }
 
 static void window_unload(Window *window) {
