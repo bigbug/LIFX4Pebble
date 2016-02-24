@@ -29,17 +29,20 @@ static uint16_t get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_in
 static void draw_row_callback(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *context) {
   switch(cell_index->row) {
     case 0:
-      snprintf(lightup_text, sizeof(lightup_text), "Light up %d min",alarm_get()->secondsToLightUpBeforeAlarm/60);
+      snprintf(lightup_text, sizeof(lightup_text), "Light up %d min",preferences_get()->secondsToLightUpBeforeAlarm/60);
       menu_cell_basic_draw(ctx, cell_layer, lightup_text, "before alarm goes of", NULL);
       break;
     case 1:
-      snprintf(flash_text, sizeof(flash_text), "Snooze to flash: %d",alarm_get()->flashingAfterXSnoozes);
+      snprintf(flash_text, sizeof(flash_text), "Snooze to flash: %d",preferences_get()->flashingAfterXSnoozes);
       menu_cell_basic_draw(ctx, cell_layer, flash_text, "Light starts pulsating", NULL);
       break;
     case 2:
-      menu_cell_basic_draw(ctx, cell_layer, "Test Alarm", "Immediately fires an alarm", NULL);
+      menu_cell_basic_draw(ctx, cell_layer, "Reset", "Back to LIFX factory settings", NULL);
       break;
     case 3:
+      menu_cell_basic_draw(ctx, cell_layer, "Test Alarm", "Immediately fires an alarm", NULL);
+      break;
+    case 4:
       menu_cell_basic_draw(ctx, cell_layer, "Test Alarm in 10 s", NULL, NULL);
       break;
     default:
@@ -59,20 +62,23 @@ static void select_callback(struct MenuLayer *menu_layer, MenuIndex *cell_index,
   //Alarm *alarm = alarm_get();
   switch(cell_index->row) {
     case 0:
-      if(alarm_get()->secondsToLightUpBeforeAlarm==60) {alarm_get()->secondsToLightUpBeforeAlarm=120;}
-      else if(alarm_get()->secondsToLightUpBeforeAlarm==120) {alarm_get()->secondsToLightUpBeforeAlarm=300;}
-      else if(alarm_get()->secondsToLightUpBeforeAlarm==300) {alarm_get()->secondsToLightUpBeforeAlarm=600;}
-      else if(alarm_get()->secondsToLightUpBeforeAlarm==600) {alarm_get()->secondsToLightUpBeforeAlarm=900;}
-      else if(alarm_get()->secondsToLightUpBeforeAlarm==900) {alarm_get()->secondsToLightUpBeforeAlarm=1800;}
-      else {alarm_get()->secondsToLightUpBeforeAlarm=60;}
+      if(preferences_get()->secondsToLightUpBeforeAlarm==60) {preferences_get()->secondsToLightUpBeforeAlarm=120;}
+      else if(preferences_get()->secondsToLightUpBeforeAlarm==120) {preferences_get()->secondsToLightUpBeforeAlarm=300;}
+      else if(preferences_get()->secondsToLightUpBeforeAlarm==300) {preferences_get()->secondsToLightUpBeforeAlarm=600;}
+      else if(preferences_get()->secondsToLightUpBeforeAlarm==600) {preferences_get()->secondsToLightUpBeforeAlarm=900;}
+      else if(preferences_get()->secondsToLightUpBeforeAlarm==900) {preferences_get()->secondsToLightUpBeforeAlarm=1800;}
+      else {preferences_get()->secondsToLightUpBeforeAlarm=60;}
       break;
     case 1:
-      alarm_get()->flashingAfterXSnoozes = (alarm_get()->flashingAfterXSnoozes + 1) % 5;
+      preferences_get()->flashingAfterXSnoozes = (preferences_get()->flashingAfterXSnoozes + 1) % 5;
       break;
     case 2:
-      wakeup_launch_window(0);
+      preferences_reset();
       break;
     case 3:
+      wakeup_launch_window(0);
+      break;
+    case 4:
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Scheduled wakeup timer");
       wakeup_schedule(future_time, WAKEUP_REASON_ALARM, true);
       break;

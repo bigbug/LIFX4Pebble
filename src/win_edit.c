@@ -56,7 +56,7 @@ static void window_unload(Window* window);
 
 static Window *s_window;
 static MenuLayer* s_menu;
-static GBitmap *check_icon,*check_icon_inv;
+//static GBitmap *check_icon,*check_icon_inv;
 static bool s_is_am;
 static bool s_select_all;
 
@@ -128,8 +128,8 @@ void win_edit_init(void)
     .unload = time_window_unload,
   });
 
-  check_icon = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_ACTION_ICON_CHECK_INV);
-  check_icon_inv = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_ACTION_ICON_CHECK);
+  //check_icon = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_ACTION_ICON_CHECK_INV);
+  //check_icon_inv = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_ACTION_ICON_CHECK);
 
   s_my_path_ptr= gpath_create(&PATH_INFO);
 }

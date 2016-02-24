@@ -54,7 +54,8 @@ static void do_snooze(void)
   int snooze_delay = 1;
   //snooze_delay = load_persistent_storage_int(SNOOZE_KEY,10);
   time_t timestamp = time(NULL) + 60*snooze_delay;
-  alarm_get()->alarm_id = wakeup_schedule(timestamp,s_snoozes+1,true);
+  //alarm_get()->alarm_id = wakeup_schedule(timestamp,s_snoozes+1,true);
+  wakeup_schedule(timestamp,s_snoozes+1,true);
   struct tm *t = localtime(&timestamp);
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Scheduled snooze at %d.%d %d:%d",t->tm_mday, t->tm_mon+1,t->tm_hour,t->tm_min);
   window_stack_pop(true);
@@ -93,7 +94,7 @@ void do_vibrate(void) {
   else
     vibes_long_pulse();
   
-  if(s_snoozes>=alarm_get()->flashingAfterXSnoozes) {
+  if(s_snoozes>=preferences_get()->flashingAfterXSnoozes) {
     if(get_lfx_state_power()) {
       send(DURATION_OFF_MS, 50);
     } else {

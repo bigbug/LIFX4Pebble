@@ -4,6 +4,18 @@
 
 Alarm myAlarm;
 AlarmTimeRing myRing;
+Preferences myPreferences;
+
+void preferences_reset()
+{
+  myPreferences.secondsToLightUpBeforeAlarm = 600;
+  myPreferences.flashingAfterXSnoozes = 0;
+}
+
+Preferences *preferences_get()
+{
+  return &myPreferences;
+}
 
 Alarm* alarm_get() {
   return &myAlarm;
@@ -53,16 +65,17 @@ void alarm_process() {
   } else {
     time_t wakeup_time = alarm_get_time_of_wakeup(&myAlarm);
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Wakeup scheduled for: %lu", (unsigned long)wakeup_time);
-    if(myAlarm.secondsToLightUpBeforeAlarm > 0) {
-      long timediff = wakeup_time - time(NULL) - myAlarm.secondsToLightUpBeforeAlarm;
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Light up scheduled %d seconds before.", myAlarm.secondsToLightUpBeforeAlarm);
+    if(myPreferences.secondsToLightUpBeforeAlarm > 0) {
+      long timediff = wakeup_time - time(NULL) - myPreferences.secondsToLightUpBeforeAlarm;
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Light up scheduled %d seconds before.", myPreferences.secondsToLightUpBeforeAlarm);
       if(timediff<0 || timediff<=60) {
         send(DURATION_ON, -timediff);
       } else {
         wakeup_schedule(timediff, WAKEUP_REASON_LIGHT_UP, true);
       }
     }
-    myAlarm.alarm_id = wakeup_schedule(wakeup_time, WAKEUP_REASON_ALARM, true);
+    //myAlarm.alarm_id = wakeup_schedule(wakeup_time, WAKEUP_REASON_ALARM, true);
+    wakeup_schedule(wakeup_time, WAKEUP_REASON_ALARM, true);
   }
 }
 
@@ -71,9 +84,7 @@ void alarm_reset(Alarm *alarm)
   alarm->hour=0;
   alarm->minute=0;
   alarm->enabled=false;
-  alarm->alarm_id=-1;
-  alarm->secondsToLightUpBeforeAlarm = 120;
-  alarm->flashingAfterXSnoozes = 1;
+  //alarm->alarm_id=-1;
 }
 
 time_t clock_to_timestamp_precise(WeekDay day, int hour, int minute) {

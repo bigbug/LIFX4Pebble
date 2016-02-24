@@ -39,7 +39,7 @@ static void wakeup_handler(WakeupId id, int32_t reason) {
   // The app has woken!
   
   if(reason == WAKEUP_REASON_LIGHT_UP) {
-    send(DURATION_ON, alarm_get()->secondsToLightUpBeforeAlarm);
+    send(DURATION_ON, alarm_get_time_of_wakeup(alarm_get())-time(NULL));
   } else {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "App was woken up!");
     wakeup_launch_window(reason);
@@ -78,6 +78,7 @@ bool perform_wakeup_tasks()
 static void init(void) {
   load_persistent_storage_alarms(alarm_get());
   load_persistent_storage_alarmring(alarm_ring_get());
+  load_persistent_storage_preferences(preferences_get());
   
   app_message_register_inbox_received(inbox_received_callback);
   app_message_register_inbox_dropped(inbox_dropped_callback);
@@ -108,8 +109,10 @@ static void init(void) {
 
 
 static void deinit(void) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Write back to persistent storage");
   write_persistent_storage_alarms(alarm_get());
   write_persistent_storage_alarmring(alarm_ring_get());
+  write_persistent_storage_preferences(preferences_get());
 }
 
 int main(void) {

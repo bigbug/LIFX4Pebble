@@ -13,11 +13,14 @@ typedef struct Alarm{
   unsigned char minute;
   //bool weekdays_active[7];
   bool enabled;
-  WakeupId alarm_id;
-  int secondsToLightUpBeforeAlarm;
-  int flashingAfterXSnoozes;
+  //WakeupId alarm_id;
   //char description[DESCRIPTION_LENGTH+1];
 }Alarm;
+
+typedef struct Preferences {
+  int secondsToLightUpBeforeAlarm;
+  int flashingAfterXSnoozes;
+}Preferences;
 
 typedef struct AlarmTime{
   unsigned char hour;
@@ -30,6 +33,9 @@ typedef struct AlarmTimeRing {
   unsigned char currentIndex;
   unsigned char length;
 }AlarmTimeRing;
+
+void preferences_reset();
+Preferences *preferences_get();
 
 AlarmTimeRing* alarm_ring_get();
 void alarm_ring_reset();

@@ -40,18 +40,6 @@
                 "type": "bitmap"
             },
             {
-                "file": "images/action_icon_check.png",
-                "name": "IMAGE_ACTION_ICON_CHECK",
-                "targetPlatforms": null,
-                "type": "bitmap"
-            },
-            {
-                "file": "images/action_icon_check_inv.png",
-                "name": "IMAGE_ACTION_ICON_CHECK_INV",
-                "targetPlatforms": null,
-                "type": "bitmap"
-            },
-            {
                 "file": "images/lifx.png",
                 "menuIcon": true,
                 "name": "LIFX",
@@ -68,7 +56,7 @@
         "chalk"
     ],
     "uuid": "0b6afc49-e1c9-4a62-b413-9e872ea33dee",
-    "versionLabel": "0.97",
+    "versionLabel": "0.98",
     "watchapp": {
         "watchface": false
     }
